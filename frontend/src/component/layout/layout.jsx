@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Navbar1 from "../navbar/navbar1";
 import Navbar2 from "../navbar/navbar2";
 import Footer from "../footer/footer";
@@ -10,6 +10,7 @@ import i18n from "../language/i18n";
 
 const Layout = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   
   // Geo-based language detection on first load (respect manual selection in URL)
@@ -33,6 +34,9 @@ const Layout = ({ children }) => {
             };
             const lang = map[country] || "en";
             if (i18n.language !== lang) i18n.changeLanguage(lang);
+            // Redirect to language-prefixed URL for SEO-friendly, country-based language
+            const target = `/${lang}${location.pathname}`;
+            navigate(target, { replace: true });
             sessionStorage.setItem("lang_auto_set", "1");
           })
           .catch(() => {});
@@ -52,11 +56,34 @@ const Layout = ({ children }) => {
 
   return (
     <>
-       <Helmet>
+      <Helmet htmlAttributes={{ lang: i18n.language || "en" }}>
         <meta
           name="google-site-verification"
           content="8o-zQTBUtcnHGEY_Cq1xMaeyzjK57z1J6LgIrR0J_gw"
         />
+        {
+          (() => {
+            const supported = ["en", "hi", "fr", "de", "es", "it", "pt"];
+            const origin = typeof window !== "undefined" ? window.location.origin : "";
+            const segments = location.pathname.split("/").filter(Boolean);
+            const hasLang = supported.includes(segments[0]);
+            const restPath = `/${hasLang ? segments.slice(1).join("/") : segments.join("/")}`;
+            const xDefaultHref = `${origin}${restPath}`;
+            return (
+              <>
+                {supported.map((lng) => (
+                  <link
+                    key={lng}
+                    rel="alternate"
+                    hrefLang={lng}
+                    href={`${origin}/${lng}${restPath}`}
+                  />
+                ))}
+                <link rel="alternate" hrefLang="x-default" href={xDefaultHref} />
+              </>
+            );
+          })()
+        }
       </Helmet>
     <div>
       <Navbar1 />

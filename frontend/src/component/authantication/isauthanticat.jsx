@@ -1,3 +1,5 @@
+import { clearCart as clearCartDB } from "../newcomponent/db";
+
 export function Isauthanticate() {
   const token = localStorage.getItem("token");
   if (token) {
@@ -12,9 +14,13 @@ export function IsAdmin() {
 
 
 
-export function Logout() {
+export async function Logout() {
+  try {
+    await clearCartDB();
+  } catch (_) {}
+  localStorage.removeItem("cart");
+  localStorage.removeItem("userId");
   localStorage.removeItem("token");
   localStorage.removeItem("role");
-  // ❌ Cart ko mat delete karo, taki login ke baad data rahe
   window.location.reload();
 }
